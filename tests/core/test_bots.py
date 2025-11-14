@@ -9,3 +9,5 @@ class TestBot(unittest.TestCase):
         bot = get_basic_bot()
         run_bot_with_ui(bot)
 
+if __name__ == '__main__':
+    unittest.main()
