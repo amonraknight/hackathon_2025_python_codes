@@ -27,3 +27,14 @@ def read_outlook_mail(output_path: str):
         emails.append(each_email)
 
     return emails
+
+
+def send_an_email(recipients: list, subject: str, body: str):
+    outlook = win32com.client.Dispatch("Outlook.Application")
+    mail = outlook.CreateItem(0)
+    mail.Subject = subject
+    mail.BodyFormat = 2  # 2代表HTML格式
+    mail.HTMLBody = body
+    for recipient in recipients:
+        mail.Recipients.Add(recipient)
+    mail.Send()
