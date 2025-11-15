@@ -23,6 +23,22 @@ def get_basic_bot():
                      function_list=tools)
 
 
+def get_bot_with_tools(tools: list = []):
+    """
+    获得一个使用指定工具的bot。
+    :param tools:
+    :return:
+    """
+    llm_cfg = {
+        # 使用 DashScope 提供的模型服务：
+        'model': 'qwen-max-latest',
+        'model_type': 'qwen_dashscope'
+    }
+
+    system_instruction = "你是一个拥有很多工具的智能体，请根据用户请求执行操作。"
+    return Assistant(llm=llm_cfg, system_message=system_instruction, function_list=tools)
+
+
 def run_bot_with_ui(bot: Assistant):
     WebUI(bot).run()
 
