@@ -17,7 +17,7 @@ def read_outlook_mail(output_path: str):
     for message in messages:
         # 生成一个随机的10位数字编号。
         random_key = random.randint(1000000000, 9999999999)
-        each_email = {"Sender": message.Sender.Address, "Subject": message.Subject, "Body": message.Body, "Random_Key": str(random_key)}
+        each_email = {"Entry_ID":message.EntryID, "Sender": message.Sender.Address, "Subject": message.Subject, "Body": message.Body, "Random_Key": str(random_key)}
         attachments = message.Attachments
         if len(attachments) > 0 and not os.path.exists(os.path.join(output_path, str(random_key))):
             os.makedirs(os.path.join(output_path, str(random_key)))
