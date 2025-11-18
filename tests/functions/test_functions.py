@@ -1,5 +1,5 @@
 import unittest
-from functions.OutLookFunctions import read_outlook_mail, send_an_email
+from utils.OutLookFunctions import read_outlook_mail, send_an_email
 
 class test_functions(unittest.TestCase):
     def test_outlook_download_emails(self):

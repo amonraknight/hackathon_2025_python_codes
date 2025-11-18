@@ -1,7 +1,7 @@
 import unittest
 from dotenv import load_dotenv
 
-from core.Bot import get_basic_bot, run_bot_with_ui, get_bot_with_tools
+from agent.bot import get_basic_bot, run_bot_with_ui, get_a_customized_agent
 
 class TestBot(unittest.TestCase):
     def test_bot(self):
@@ -24,7 +24,7 @@ class TestBot(unittest.TestCase):
             }
             }
         ]
-        bot = get_bot_with_tools(tools)
+        bot = get_a_customized_agent(tools)
         run_bot_with_ui(bot)
 
     def test_customized_bot_2(self):
@@ -40,7 +40,7 @@ class TestBot(unittest.TestCase):
             }
             }
         ]
-        bot = get_bot_with_tools(tools)
+        bot = get_a_customized_agent(tools)
         run_bot_with_ui(bot)
 
 if __name__ == '__main__':
