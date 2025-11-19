@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 from agent.bot import get_a_customized_agent
 from dotenv import load_dotenv
+from utils.constants import *
 
 auditor_agent = None
 
@@ -19,7 +20,7 @@ class FuncappConfig(AppConfig):
                         "args": [
                             "-y",
                             "@modelcontextprotocol/server-filesystem",
-                            "D:\\hackathon_io\\outputs"
+                            ACCESSIBLE_ROOT
                         ]
                     },
                     "playwright": {
@@ -32,8 +33,13 @@ class FuncappConfig(AppConfig):
                 }
             ]
             system_message = '''
-            你是一个交易审核智能体，通过你拥有的工具获得交易信息、文件，根据交易规则和用户画像判断交易是否合规。
-            
+            You are an AI auditor of stock transactions. 
+            Make judgements according to clients' documents, market rules and client profile.
+            1. Use Playwright to search for stock information on the web.
+            2. Use Filesystem to read the clients' documents.
+            3. Regulations will be provided as a context.
+            4. Make your decisions and write your judgement.
+            5. Reply the human auditor's doubts in chat.
             '''
             auditor_agent = get_a_customized_agent(tools=tools, system_message=system_message)
 
