@@ -1,6 +1,8 @@
 from django.db import models
 from utils.constants import *
 import os
+from qwen_agent.tools.base import BaseTool, register_tool
+import json5
 
 
 # Create your models here.
@@ -16,7 +18,7 @@ class Email(models.Model):
 
     def __str__(self):
         return ("Here is an email from %s:\n Subject: %s \n "
-                "Mail body: %s\n The attachments(if any) are under \"%s\".") % (
+                "Mail body: %s\n The attachments(if any) are under path \"%s\".") % (
             self.sender, self.subject, self.body, os.path.join(ACCESSIBLE_ROOT, self.entry_id))
 
 
@@ -32,3 +34,23 @@ class Client(models.Model):
                                                                                                   self.email_address,
                                                                                                   self.profile,
                                                                                                   self.total_asset_value)
+
+
+@register_tool('get_target_email')
+class GetTargetEmail(BaseTool):
+    description = ('Get the target email by message_id. Returns the sender, subject, body of the email '
+                   'and where to find the attachments.')
+    parameters = [{
+        'name': 'message_id',
+        'description': 'The message id of the target email.',
+        'type': 'string',
+        'required': True
+    }]
+
+    def call(self, params: str, **kwargs) -> str:
+        message_id = int(json5.loads(params)['message_id'])
+        try:
+            target_email: Email = Email.objects.get(message_id=message_id)
+            return str(target_email)
+        except Email.DoesNotExist:
+            return "Failed to get the target email. Please verify the message_id."

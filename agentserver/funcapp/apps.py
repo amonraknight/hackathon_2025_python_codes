@@ -5,6 +5,7 @@ from utils.constants import *
 
 auditor_agent = None
 
+
 class FuncappConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'funcapp'
@@ -30,7 +31,8 @@ class FuncappConfig(AppConfig):
                         ]
                     }
                 }
-                }
+                },
+                'get_target_email'
             ]
             system_message = '''
             You are an AI auditor of stock transactions. 
@@ -42,4 +44,3 @@ class FuncappConfig(AppConfig):
             5. Reply the human auditor's doubts in chat.
             '''
             auditor_agent = get_a_customized_agent(tools=tools, system_message=system_message)
-

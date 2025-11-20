@@ -1,5 +1,7 @@
 from funcapp.models import Email, Client
 
+
+
 # 这里将放置所有的数据库操作。
 def has_email_been_registered(entry_id: str):
     """
@@ -8,6 +10,7 @@ def has_email_been_registered(entry_id: str):
     :return: bool
     """
     return Email.objects.filter(entry_id=entry_id).exists()
+
 
 def register_an_email(email: Email):
     """
@@ -21,12 +24,14 @@ def register_an_email(email: Email):
         email.save()
     return email.message_id
 
+
 def get_all_emails():
     """
     获得所有的email。
     :return: Email
     """
     return Email.objects.all()
+
 
 def get_target_email(message_id: int):
     """
@@ -36,7 +41,9 @@ def get_target_email(message_id: int):
     """
     return Email.objects.get(message_id=message_id)
 
-def update_target_email_status_and_judgement(message_id: int, status: str=None, audit_pass: str=None, audit_judgement: str=None):
+
+def update_target_email_status_and_judgement(message_id: int, status: str = None, audit_pass: str = None,
+                                             audit_judgement: str = None):
     """
     更新目标email的状态和审核结果。如果找不到message_id则不做任何事。
     :param status:
@@ -57,6 +64,7 @@ def update_target_email_status_and_judgement(message_id: int, status: str=None, 
     except Email.DoesNotExist:
         pass
 
+
 def get_client_by_email_address(email_address: str):
     """
     获得目标email的client。
@@ -64,6 +72,7 @@ def get_client_by_email_address(email_address: str):
     :return: Client
     """
     return Client.objects.get(email_address=email_address)
+
 
 def update_client_profile(client_id: int, profile: str):
     """
