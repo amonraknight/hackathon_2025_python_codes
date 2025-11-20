@@ -3,6 +3,7 @@ from agent.bot import get_a_customized_agent
 from dotenv import load_dotenv
 from utils.constants import *
 
+
 auditor_agent = None
 
 
@@ -32,7 +33,8 @@ class FuncappConfig(AppConfig):
                     }
                 }
                 },
-                'get_target_email'
+                'get_target_email',
+                'register_an_email'
             ]
             system_message = '''
             You are an AI auditor of stock transactions. 

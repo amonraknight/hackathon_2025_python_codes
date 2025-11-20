@@ -1,6 +1,7 @@
 import win32com.client
 import os
-import random
+import pythoncom
+
 
 def read_outlook_mail(output_path: str):
     '''
@@ -8,6 +9,7 @@ def read_outlook_mail(output_path: str):
     :param output_path:
     :return:
     '''
+    pythoncom.CoInitialize()
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
     inbox = outlook.GetDefaultFolder(6)  # 6代表收件箱
     messages = inbox.Items
@@ -15,15 +17,14 @@ def read_outlook_mail(output_path: str):
     emails = []
 
     for message in messages:
-        # 生成一个随机的10位数字编号。
-        random_key = random.randint(1000000000, 9999999999)
-        each_email = {"Entry_ID":message.EntryID, "Sender": message.Sender.Address, "Subject": message.Subject, "Body": message.Body, "Random_Key": str(random_key)}
+        each_email = {"Entry_ID": message.EntryID, "Subject": message.Subject, "Sender": message.Sender.Address,
+                      "Body": message.Body}
         attachments = message.Attachments
-        if len(attachments) > 0 and not os.path.exists(os.path.join(output_path, str(random_key))):
-            os.makedirs(os.path.join(output_path, str(random_key)))
+        if len(attachments) > 0 and not os.path.exists(os.path.join(output_path, message.EntryID)):
+            os.makedirs(os.path.join(output_path, message.EntryID))
 
         for attachment in attachments:
-            attachment.SaveAsFile(os.path.join(output_path, str(random_key), attachment.FileName))
+            attachment.SaveAsFile(os.path.join(output_path, message.EntryID, attachment.FileName))
         emails.append(each_email)
 
     return emails

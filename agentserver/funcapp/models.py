@@ -54,3 +54,56 @@ class GetTargetEmail(BaseTool):
             return str(target_email)
         except Email.DoesNotExist:
             return "Failed to get the target email. Please verify the message_id."
+
+
+@register_tool('register_an_email')
+class RegisterAnEmail(BaseTool):
+    description = 'Register an email by inserting entry_id, subject, sender, body to DB with a status.'
+    parameters = [
+        {
+            'name': 'entry_id',
+            'description': 'The entry ID of an email.',
+            'type': 'string',
+            'required': True
+        },
+        {
+            'name': 'subject',
+            'description': 'The subject of an email.',
+            'type': 'string',
+            'required': True
+        },
+        {
+            'name': 'sender',
+            'description': 'The sender of an email.',
+            'type': 'string',
+            'required': True
+        },
+        {
+            'name': 'body',
+            'description': 'The body of an email.',
+            'type': 'string',
+            'required': True
+        },
+        {
+            'name': 'status',
+            'description': 'If the email is about financial transaction, write "NEW". Otherwise write "IGNORED".',
+            'type': 'string',
+            'required': True
+        }
+    ]
+
+    def call(self, params: str, **kwargs) -> str:
+        entry_id = json5.loads(params)['entry_id']
+        subject = json5.loads(params)['subject']
+        sender = json5.loads(params)['sender']
+        body = json5.loads(params)['body']
+        status = json5.loads(params)['status']
+
+        if Email.objects.filter(entry_id=entry_id).exists():
+            return 'This email has previously been registered. Message Id %d.' % Email.objects.get(
+                entry_id=entry_id).message_id
+        else:
+            email = Email(entry_id=entry_id, subject=subject, sender=sender, body=body, status=status, audit_pass=False,
+                          audit_judgement="")
+            email.save()
+        return 'This email has been registered. Message Id %d.' % email.message_id
