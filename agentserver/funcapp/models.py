@@ -12,6 +12,7 @@ class Email(models.Model):
     subject = models.CharField(max_length=100)
     sender = models.EmailField(max_length=254)
     body = models.TextField()
+    # Status values: NEW, IGNORED, AUDITED, REPLIED
     status = models.CharField(max_length=10)
     audit_pass = models.BooleanField()
     audit_judgement = models.TextField()
