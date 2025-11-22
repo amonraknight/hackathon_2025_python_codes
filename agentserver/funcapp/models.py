@@ -108,3 +108,46 @@ class RegisterAnEmail(BaseTool):
                           audit_judgement="")
             email.save()
         return 'This email has been registered. Message Id %d.' % email.message_id
+
+
+@register_tool('add_audit_judgement')
+class AddAuditJudgement(BaseTool):
+    description = ('After auditing a transaction email, '
+                   'please use this tool to update field "status", '
+                   '"audit_pass" and "audit_judgement" of the corresponding record.')
+    parameters = [
+        {
+            'name': 'message_id',
+            'description': 'The primary key of an email.',
+            'type': 'integer',
+            'required': True
+        },
+        {
+            'name': 'audit_pass',
+            'description': 'If you judgement the transaction valid, write "True". Otherwise write "False".',
+            'type': 'boolean',
+            'required': True
+        },
+        {
+            'name': 'audit_judgement',
+            'description': 'The judgement of the transaction.',
+            'type': 'string',
+            'required': True
+        }
+    ]
+
+    def call(self, params: str, **kwargs) -> str:
+        message_id = int(json5.loads(params)['message_id'])
+        audit_pass = json5.loads(params)['audit_pass']
+        audit_judgement = json5.loads(params)['audit_judgement']
+
+        try:
+            target_email: Email = Email.objects.get(message_id=message_id)
+            target_email.status = 'AUDITED'
+            target_email.audit_pass = audit_pass
+            target_email.audit_judgement = audit_judgement
+            target_email.save()
+            return 'The judgement has been added to the record.'
+        except Email.DoesNotExist:
+            return 'Message not found. Please verify the message_id.'
+

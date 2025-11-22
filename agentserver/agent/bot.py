@@ -25,7 +25,7 @@ def get_basic_bot():
 def get_a_customized_agent(tools: list = [], system_message: str = None):
     llm_cfg = {
         # 使用 DashScope 提供的模型服务：
-        'model': 'qwen-max-latest',
+        'model': 'qwen3-235b-a22b',
         'model_type': 'qwen_dashscope'
     }
 

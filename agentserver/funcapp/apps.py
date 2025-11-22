@@ -34,7 +34,8 @@ class FuncappConfig(AppConfig):
                 }
                 },
                 'get_target_email',
-                'register_an_email'
+                'register_an_email',
+                'add_audit_judgement'
             ]
             system_message = '''
             You are an AI auditor of stock transactions. 

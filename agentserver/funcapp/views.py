@@ -9,6 +9,8 @@ import json5
 from qwen_agent.utils.output_beautify import typewriter_print
 from .models import Email, Client
 from django.forms.models import model_to_dict
+import os
+from utils.FileUtil import get_all_files_under_path
 
 
 # Create your views here.
@@ -56,7 +58,62 @@ def audit_email_by_message_id(request, message_id):
     :return:
     '''
     if request.method == 'POST':
-        response = GeneralResponseBody(message="Registered all emails.", status=1, data=None)
+        # Get the email from DB.
+        email = None
+        try:
+            email: Email = Email.objects.get(message_id=message_id)
+        except Email.DoesNotExist:
+            response = GeneralResponseBody(message="Target email not found.", status=1, data=None)
+            return JsonResponse(response.get_response_body())
+
+        if email.status == 'IGNORED':
+            response = GeneralResponseBody(message="This email has been ignored.", status=1, data=None)
+            return JsonResponse(response.get_response_body())
+
+        client = None
+        try:
+            client: Client = Client.objects.get(email_address=email.sender)
+        except Client.DoesNotExist:
+            response = GeneralResponseBody(message="Corresponding client is not found.", status=1, data=None)
+            return JsonResponse(response.get_response_body())
+
+        # Prepare the attachments.
+        attachment_folder = os.path.join(ACCESSIBLE_ROOT, email.entry_id)
+        attachment_paths = get_all_files_under_path(attachment_folder)
+
+        # Get the agent.
+        agent: Assistant = auditor_agent
+
+        # Prepare the messages.
+        messages = []
+        messages.append({'role': 'system',
+                         'content': 'Please audit a transaction from client %s through email (message_id="%d"). '
+                                    'The user will provide the email content, attached transaction detail files'
+                                    ' and the client\'s profile as reference. '
+                                    'If you consider the transaction valid, please set audit_pass as true and congratulate the client. '
+                                    'Otherwise, please set audit_pass as false and tell the client the reason.'
+                                    'Use tool "add_audit_judgement" to add your judgement to DB.'
+                                    % (client.client_name, message_id)})
+
+        messages.append(
+            {'role': 'user', 'content': 'The email subject is "%s", the body is "%s".' % (email.subject, email.body)})
+        if len(attachment_paths) > 0:
+            for attach_idx, each_path in enumerate(attachment_paths):
+                messages.append({'role': 'user',
+                                 'content': [{'text': 'This is attachment #%d.' % attach_idx}, {'file': each_path}]})
+        else:
+            messages.append({'role': 'user', 'content': 'The client\'s email didn\'t provide any attachment. '
+                                                        'Please judgement this transaction as invalid.'})
+
+        messages.append(
+            {'role': 'user', 'content': 'The transaction should also follow this regulation: "%s"' % client.profile})
+
+        reply = []
+        response_plain_text = ''
+        for reply in agent.run(messages=messages):
+            response_plain_text = typewriter_print(reply, response_plain_text)
+
+        response = GeneralResponseBody(message="Registered all emails.", status=1, data=reply)
 
         return JsonResponse(response.get_response_body())
     else:
@@ -102,7 +159,8 @@ def reply_email_by_message_id(request, message_id):
                 response = GeneralResponseBody(message="Email replied.", status=0, data=email_dict)
             else:
                 email_dict = model_to_dict(email)
-                response = GeneralResponseBody(message="This email is not in AUDITED status.", status=1, data=email_dict)
+                response = GeneralResponseBody(message="This email is not in AUDITED status.", status=1,
+                                               data=email_dict)
 
         except Email.DoesNotExist:
             response = GeneralResponseBody(message="Email doesn't exist.", status=1, data=None)
