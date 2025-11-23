@@ -31,6 +31,7 @@ def read_outlook_mail(output_path: str):
 
 
 def send_an_email(recipients: list, subject: str, body: str):
+    pythoncom.CoInitialize()
     outlook = win32com.client.Dispatch("Outlook.Application")
     mail = outlook.CreateItem(0)
     mail.Subject = subject

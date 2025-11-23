@@ -42,7 +42,7 @@ def register_all_outlook_emails(request):
             for each_resp in agent.run(messages=messages):
                 response_plain_text = typewriter_print(each_resp, response_plain_text)
 
-        response = GeneralResponseBody(message="Registered all emails.", status=0, data=None)
+        response = GeneralResponseBody(message="Registered %d new emails." % len(emails), status=0, data=None)
 
         return JsonResponse(response.get_response_body())
     else:
@@ -134,7 +134,30 @@ def acquire_all_emails(request):
 
         return JsonResponse(response.get_response_body())
     else:
-        Http404("Request method should be GET.")
+        Http404("Request method should be POST.")
+        return None
+
+
+@csrf_exempt
+def acquire_target_email(request, message_id):
+    '''
+    Acquire a target email from DB which is not in status IGNORED.
+    :param message_id:
+    :param request:
+    :return:
+    '''
+    if request.method == 'POST':
+        try:
+            email: Email = Email.objects.get(message_id=message_id)
+
+            response = GeneralResponseBody(message="Email found.", status=0, data=model_to_dict(email))
+        except Email.DoesNotExist:
+            response = GeneralResponseBody(message="Target email not found.", status=1, data=None)
+
+        return JsonResponse(response.get_response_body())
+    else:
+        Http404("Request method should be POST.")
+        return None
 
 
 @csrf_exempt
@@ -184,6 +207,7 @@ def chat_over_a_given_email(request, message_id):
         return JsonResponse(response.get_response_body())
     else:
         Http404("Request method should be POST.")
+
 
 @csrf_exempt
 def reset_test_emails(request):
