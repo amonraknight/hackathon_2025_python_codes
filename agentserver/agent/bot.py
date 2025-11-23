@@ -30,7 +30,7 @@ def get_a_customized_agent(tools: list = [], system_message: str = None):
     }
 
     if system_message is None:
-        system_message = "你是一个拥有很多工具的智能体，请根据用户请求执行操作。"
+        system_message = "You are a resourceful agent."
     return Assistant(llm=llm_cfg, system_message=system_message, function_list=tools)
 
 def run_bot_with_ui(bot: Assistant):

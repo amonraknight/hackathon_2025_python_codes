@@ -7,5 +7,6 @@ urlpatterns = [
     path("acquire_all", views.acquire_all_emails, name="acquire_all_emails"),
     path("audit_email/<int:message_id>", views.audit_email_by_message_id, name="audit_email_by_message_id"),
     path("reply_email/<int:message_id>", views.reply_email_by_message_id, name="reply_email_by_message_id"),
-    path("chat/<int:message_id>", views.chat_over_a_given_email, name="chat_over_a_given_email")
+    path("chat/<int:message_id>", views.chat_over_a_given_email, name="chat_over_a_given_email"),
+    path("reset", views.reset_test_emails, name="reset_test_emails")
 ]

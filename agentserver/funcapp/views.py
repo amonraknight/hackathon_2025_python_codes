@@ -184,3 +184,25 @@ def chat_over_a_given_email(request, message_id):
         return JsonResponse(response.get_response_body())
     else:
         Http404("Request method should be POST.")
+
+@csrf_exempt
+def reset_test_emails(request):
+    '''
+    Reset the test emails.
+    :param request:
+    :return:
+    '''
+    if request.method == 'GET':
+        valid_emails = Email.objects.exclude(status='IGNORED')
+        for each in valid_emails:
+            each.status = 'NEW'
+            each.audit_judgement = ''
+            each.audit_pass = False
+            each.save()
+
+        response = GeneralResponseBody(message="All emails reset.", status=0, data=None)
+
+        return JsonResponse(response.get_response_body())
+
+    else:
+        Http404("Request method should be GET.")
