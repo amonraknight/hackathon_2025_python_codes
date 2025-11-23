@@ -191,6 +191,7 @@ def reply_email_by_message_id(request, message_id):
         return JsonResponse(response.get_response_body())
     else:
         Http404("Request method should be POST.")
+        return None
 
 
 @csrf_exempt
@@ -202,11 +203,67 @@ def chat_over_a_given_email(request, message_id):
     :return:
     '''
     if request.method == 'POST':
-        response = GeneralResponseBody(message="Registered all emails.", status=1, data=None)
+        # Get the email from DB.
+        email = None
+        try:
+            email: Email = Email.objects.get(message_id=message_id)
+        except Email.DoesNotExist:
+            response = GeneralResponseBody(message="Target email not found.", status=1, data=None)
+            return JsonResponse(response.get_response_body())
+
+        if email.status == 'IGNORED':
+            response = GeneralResponseBody(message="This email has been ignored.", status=1, data=None)
+            return JsonResponse(response.get_response_body())
+
+        client = None
+        try:
+            client: Client = Client.objects.get(email_address=email.sender)
+        except Client.DoesNotExist:
+            response = GeneralResponseBody(message="Corresponding client is not found.", status=1, data=None)
+            return JsonResponse(response.get_response_body())
+
+        # Prepare the attachments.
+        attachment_folder = os.path.join(ACCESSIBLE_ROOT, email.entry_id)
+        attachment_paths = get_all_files_under_path(attachment_folder)
+
+        # Prepare the messages.
+        messages = []
+        messages.append({'role': 'system',
+                         'content': 'You are going to assist the user to audit a transaction '
+                                    'by client %s through email (message_id="%d"). '
+                                    'Answer the user\'s question or follow the users instruction. '
+                                    'The user is going to provide the details of the email, the attachment, the client.'
+                                    % (client.client_name, message_id)})
+
+        messages.append(
+            {'role': 'user', 'content': 'The email subject is "%s", the body is "%s".' % (email.subject, email.body)})
+
+        if len(attachment_paths) > 0:
+            for attach_idx, each_path in enumerate(attachment_paths):
+                messages.append({'role': 'user',
+                                 'content': [{'text': 'This is attachment #%d.' % attach_idx}, {'file': each_path}]})
+        messages.append({'role': 'user', 'content': 'This is what we know about the client: ' + str(client)})
+
+
+        # Get request body.
+        messages_in_request = json5.loads(request.body.decode('utf-8'))
+
+        messages.extend(messages_in_request)
+
+        # Get the agent.
+        agent: Assistant = auditor_agent
+
+        reply = []
+        response_plain_text = ''
+        for reply in agent.run(messages=messages):
+            response_plain_text = typewriter_print(reply, response_plain_text)
+
+        response = GeneralResponseBody(message="Chat got replied.", status=0, data=reply)
 
         return JsonResponse(response.get_response_body())
     else:
         Http404("Request method should be POST.")
+        return None
 
 
 @csrf_exempt
@@ -230,3 +287,4 @@ def reset_test_emails(request):
 
     else:
         Http404("Request method should be GET.")
+        return None
