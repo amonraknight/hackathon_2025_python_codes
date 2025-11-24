@@ -1,5 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import HttpResponse, Http404, JsonResponse, StreamingHttpResponse
 from utils.GeneralReponseBody import GeneralResponseBody
 from utils.outlook_functions import read_outlook_mail, send_an_email
 from utils.constants import *
@@ -11,6 +11,8 @@ from .models import Email, Client
 from django.forms.models import model_to_dict
 import os
 from utils.FileUtil import get_all_files_under_path
+from utils.GeneralFunctions import iterate_generator, test_generator
+from .services import prepare_messages_for_chat_over_email
 
 
 # Create your views here.
@@ -197,70 +199,28 @@ def reply_email_by_message_id(request, message_id):
 @csrf_exempt
 def chat_over_a_given_email(request, message_id):
     '''
-    Chat over a given email.
+    Chat over a given email. No streaming.
     :param request:
     :param message_id:
     :return:
     '''
     if request.method == 'POST':
-        # Get the email from DB.
-        email = None
-        try:
-            email: Email = Email.objects.get(message_id=message_id)
-        except Email.DoesNotExist:
-            response = GeneralResponseBody(message="Target email not found.", status=1, data=None)
+
+        messages_from_request = json5.loads(request.body.decode('utf-8'))
+        error_message, status, messages = prepare_messages_for_chat_over_email(message_id, messages_from_request)
+        if status == 1:
+            response = GeneralResponseBody(message=error_message, status=1, data=None)
             return JsonResponse(response.get_response_body())
+        else:
+            agent: Assistant = auditor_agent
+            reply = []
+            response_plain_text = ''
+            for reply in agent.run(messages=messages):
+                response_plain_text = typewriter_print(reply, response_plain_text)
 
-        if email.status == 'IGNORED':
-            response = GeneralResponseBody(message="This email has been ignored.", status=1, data=None)
+            response = GeneralResponseBody(message="Chat got replied.", status=0, data=reply)
+
             return JsonResponse(response.get_response_body())
-
-        client = None
-        try:
-            client: Client = Client.objects.get(email_address=email.sender)
-        except Client.DoesNotExist:
-            response = GeneralResponseBody(message="Corresponding client is not found.", status=1, data=None)
-            return JsonResponse(response.get_response_body())
-
-        # Prepare the attachments.
-        attachment_folder = os.path.join(ACCESSIBLE_ROOT, email.entry_id)
-        attachment_paths = get_all_files_under_path(attachment_folder)
-
-        # Prepare the messages.
-        messages = []
-        messages.append({'role': 'system',
-                         'content': 'You are going to assist the user to audit a transaction '
-                                    'by client %s through email (message_id="%d"). '
-                                    'Answer the user\'s question or follow the users instruction. '
-                                    'The user is going to provide the details of the email, the attachment, the client.'
-                                    % (client.client_name, message_id)})
-
-        messages.append(
-            {'role': 'user', 'content': 'The email subject is "%s", the body is "%s".' % (email.subject, email.body)})
-
-        if len(attachment_paths) > 0:
-            for attach_idx, each_path in enumerate(attachment_paths):
-                messages.append({'role': 'user',
-                                 'content': [{'text': 'This is attachment #%d.' % attach_idx}, {'file': each_path}]})
-        messages.append({'role': 'user', 'content': 'This is what we know about the client: ' + str(client)})
-
-
-        # Get request body.
-        messages_in_request = json5.loads(request.body.decode('utf-8'))
-
-        messages.extend(messages_in_request)
-
-        # Get the agent.
-        agent: Assistant = auditor_agent
-
-        reply = []
-        response_plain_text = ''
-        for reply in agent.run(messages=messages):
-            response_plain_text = typewriter_print(reply, response_plain_text)
-
-        response = GeneralResponseBody(message="Chat got replied.", status=0, data=reply)
-
-        return JsonResponse(response.get_response_body())
     else:
         Http404("Request method should be POST.")
         return None
@@ -288,3 +248,39 @@ def reset_test_emails(request):
     else:
         Http404("Request method should be GET.")
         return None
+
+@csrf_exempt
+def chat_over_a_given_email_stream(request, message_id):
+    '''
+    Chat over a given email. The output is a steam.
+    :param request:
+    :param message_id:
+    :return:
+    '''
+    if request.method == 'POST':
+        messages_from_request = json5.loads(request.body.decode('utf-8'))
+        error_message, status, messages = prepare_messages_for_chat_over_email(message_id, messages_from_request)
+        if status == 1:
+            response = GeneralResponseBody(message=error_message, status=1, data=None)
+            return JsonResponse(response.get_response_body())
+        else:
+            agent: Assistant = auditor_agent
+
+            return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)), content_type='text/plain')
+
+    else:
+        Http404("Request method should be POST.")
+        return None
+
+@csrf_exempt
+def test_streaming_response(request):
+    """
+    test_list = [i for i in range(100)]
+    return StreamingHttpResponse(test_generator(test_list), content_type='text/plain')
+    """
+    messages =[{'role': 'user', 'content': 'Hello! Could you introduce yourself?'}]
+    agent: Assistant = auditor_agent
+
+    return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
+                                 content_type='text/plain')
+
