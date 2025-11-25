@@ -1,18 +1,15 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, Http404, JsonResponse, StreamingHttpResponse
 from utils.GeneralReponseBody import GeneralResponseBody
-from utils.outlook_functions import read_outlook_mail, send_an_email
-from utils.constants import *
+from utils.outlook_functions import send_an_email
 from .apps import auditor_agent
 from qwen_agent.agents import Assistant
 import json5
 from qwen_agent.utils.output_beautify import typewriter_print
-from .models import Email, Client
+from .models import Email
 from django.forms.models import model_to_dict
-import os
-from utils.FileUtil import get_all_files_under_path
-from utils.GeneralFunctions import iterate_generator, test_generator
-from .services import prepare_messages_for_chat_over_email
+from utils.GeneralFunctions import iterate_generator
+from .services import prepare_messages_for_chat_over_email, register_all_emails_service, audit_email_service
 
 
 # Create your views here.
@@ -24,31 +21,11 @@ def index(request):
 def register_all_outlook_emails(request):
     if request.method == 'POST':
 
-        emails = read_outlook_mail(ACCESSIBLE_ROOT)
-        all_clients = Client.objects.all()
-        existing_emails = Email.objects.all()
-
-        # Filter the emails by sender and entry_id. If the sender doesn't belong to any client or the entry_id already exists, drop off.
-        emails = [each_email for each_email in emails if
-                  each_email['Sender'] in [each_client.email_address for each_client in all_clients] and each_email[
-                      'Entry_ID'] not in [each_email.entry_id for each_email in existing_emails]]
-
-        agent: Assistant = auditor_agent
-
-        for each_email in emails:
-            messages = [
-                {'role': 'user',
-                 'content': 'Please register the following email to DB:\n' + json5.dumps(each_email, indent=4)}
-            ]
-            response_plain_text = ''
-            for each_resp in agent.run(messages=messages):
-                response_plain_text = typewriter_print(each_resp, response_plain_text)
-
-        response = GeneralResponseBody(message="Registered %d new emails." % len(emails), status=0, data=None)
-
+        response = register_all_emails_service()
         return JsonResponse(response.get_response_body())
     else:
         Http404("Request method should be POST.")
+        return None
 
 
 @csrf_exempt
@@ -60,66 +37,12 @@ def audit_email_by_message_id(request, message_id):
     :return:
     '''
     if request.method == 'POST':
-        # Get the email from DB.
-        email = None
-        try:
-            email: Email = Email.objects.get(message_id=message_id)
-        except Email.DoesNotExist:
-            response = GeneralResponseBody(message="Target email not found.", status=1, data=None)
-            return JsonResponse(response.get_response_body())
 
-        if email.status == 'IGNORED':
-            response = GeneralResponseBody(message="This email has been ignored.", status=1, data=None)
-            return JsonResponse(response.get_response_body())
-
-        client = None
-        try:
-            client: Client = Client.objects.get(email_address=email.sender)
-        except Client.DoesNotExist:
-            response = GeneralResponseBody(message="Corresponding client is not found.", status=1, data=None)
-            return JsonResponse(response.get_response_body())
-
-        # Prepare the attachments.
-        attachment_folder = os.path.join(ACCESSIBLE_ROOT, email.entry_id)
-        attachment_paths = get_all_files_under_path(attachment_folder)
-
-        # Get the agent.
-        agent: Assistant = auditor_agent
-
-        # Prepare the messages.
-        messages = []
-        messages.append({'role': 'system',
-                         'content': 'Please audit a transaction from client %s through email (message_id="%d"). '
-                                    'The user will provide the email content, attached transaction detail files'
-                                    ' and the client\'s profile as reference. '
-                                    'If you consider the transaction valid, please set audit_pass as true and congratulate the client. '
-                                    'Otherwise, please set audit_pass as false and tell the client the reason.'
-                                    'Use tool "add_audit_judgement" to add your judgement to DB.'
-                                    % (client.client_name, message_id)})
-
-        messages.append(
-            {'role': 'user', 'content': 'The email subject is "%s", the body is "%s".' % (email.subject, email.body)})
-        if len(attachment_paths) > 0:
-            for attach_idx, each_path in enumerate(attachment_paths):
-                messages.append({'role': 'user',
-                                 'content': [{'text': 'This is attachment #%d.' % attach_idx}, {'file': each_path}]})
-        else:
-            messages.append({'role': 'user', 'content': 'The client\'s email didn\'t provide any attachment. '
-                                                        'Please judgement this transaction as invalid.'})
-
-        messages.append(
-            {'role': 'user', 'content': 'The transaction should also follow this regulation: "%s"' % client.profile})
-
-        reply = []
-        response_plain_text = ''
-        for reply in agent.run(messages=messages):
-            response_plain_text = typewriter_print(reply, response_plain_text)
-
-        response = GeneralResponseBody(message="Registered all emails.", status=1, data=reply)
-
+        response = audit_email_service(message_id)
         return JsonResponse(response.get_response_body())
     else:
         Http404("Request method should be POST.")
+        return None
 
 
 @csrf_exempt
@@ -249,6 +172,7 @@ def reset_test_emails(request):
         Http404("Request method should be GET.")
         return None
 
+
 @csrf_exempt
 def chat_over_a_given_email_stream(request, message_id):
     '''
@@ -266,11 +190,13 @@ def chat_over_a_given_email_stream(request, message_id):
         else:
             agent: Assistant = auditor_agent
 
-            return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)), content_type='text/plain')
+            return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
+                                         content_type='text/plain')
 
     else:
         Http404("Request method should be POST.")
         return None
+
 
 @csrf_exempt
 def test_streaming_response(request):
@@ -278,9 +204,8 @@ def test_streaming_response(request):
     test_list = [i for i in range(100)]
     return StreamingHttpResponse(test_generator(test_list), content_type='text/plain')
     """
-    messages =[{'role': 'user', 'content': 'Hello! Could you introduce yourself?'}]
+    messages = [{'role': 'user', 'content': 'Hello! Could you introduce yourself?'}]
     agent: Assistant = auditor_agent
 
     return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
                                  content_type='text/plain')
-

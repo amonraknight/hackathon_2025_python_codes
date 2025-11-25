@@ -8,7 +8,7 @@ from utils.outlook_functions import send_an_email
 
 auditor_agent = None
 
-
+# Write all the functions here so they will be loaded to .
 @register_tool('send_email')
 class SendEmail(BaseTool):
     description = 'Send out an email to given recipients.'

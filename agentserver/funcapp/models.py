@@ -16,6 +16,8 @@ class Email(models.Model):
     status = models.CharField(max_length=10)
     audit_pass = models.BooleanField()
     audit_judgement = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return ("Here is an email from %s:\n Subject: %s \n "
