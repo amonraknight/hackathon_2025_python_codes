@@ -130,7 +130,9 @@ def audit_email_service(message_id: int):
                                                     'Please judgement this transaction as invalid.'})
 
     messages.append(
-        {'role': 'user', 'content': 'The transaction should also follow this regulation: "%s"' % client.profile})
+        {'role': 'user', 'content': 'The client\'s total asset value is $%f. '
+                                    'The transaction should also follow this regulation: "%s"'
+                                    % (client.total_asset_value, client.profile)})
 
     reply = []
     response_plain_text = ''
