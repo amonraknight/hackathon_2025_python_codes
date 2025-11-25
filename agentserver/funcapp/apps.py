@@ -2,9 +2,48 @@ from django.apps import AppConfig
 from agent.bot import get_a_customized_agent
 from dotenv import load_dotenv
 from utils.constants import *
-
+from qwen_agent.tools.base import BaseTool, register_tool
+import json5
+from utils.outlook_functions import send_an_email
 
 auditor_agent = None
+
+
+@register_tool('send_email')
+class SendEmail(BaseTool):
+    description = 'Send out an email to given recipients.'
+    parameters = [
+        {
+            'name': 'recipients',
+            'description': 'A list of email addresses as the recipients of the email, separated by ";".',
+            'type': 'string',
+            'required': True
+        },
+        {
+            'name': 'subject',
+            'description': 'The subject of the email.',
+            'type': 'string',
+            'required': True
+        },
+        {
+            'name': 'body',
+            'description': 'The email body.',
+            'type': 'string',
+            'required': True
+        }
+    ]
+
+    def call(self, params: str, **kwargs) -> str:
+        recipients = json5.loads(params)['recipients']
+        subject = json5.loads(params)['subject']
+        body = json5.loads(params)['body']
+
+        # Split recipients by ";".
+        recipients_list = recipients.split(';')
+
+        send_an_email(recipients_list, subject, body)
+
+        return 'Email sent.'
 
 
 class FuncappConfig(AppConfig):
@@ -33,9 +72,10 @@ class FuncappConfig(AppConfig):
                     }
                 }
                 },
-                'get_target_email',
-                'register_an_email',
-                'add_audit_judgement'
+                'get_target_message',
+                'register_a_message',
+                'add_audit_judgement',
+                'send_email'
             ]
             system_message = '''
             You are an AI auditor of stock transactions. 

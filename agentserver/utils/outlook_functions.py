@@ -3,6 +3,7 @@ import os
 import pythoncom
 
 
+
 def read_outlook_mail(output_path: str):
     '''
     读取所有的outlook邮件，获取正文、发件人、主题，下载附件。
@@ -40,3 +41,5 @@ def send_an_email(recipients: list, subject: str, body: str):
     for recipient in recipients:
         mail.Recipients.Add(recipient)
     mail.Send()
+
+

@@ -4,6 +4,7 @@ import os
 from utils.FileUtil import get_all_files_under_path
 
 
+
 def prepare_messages_for_chat_over_email(message_id: int, messages_from_request: list):
     '''
 
@@ -53,3 +54,5 @@ def prepare_messages_for_chat_over_email(message_id: int, messages_from_request:
     messages.extend(messages_from_request)
 
     return "Messages prepared.", 0, messages
+
+

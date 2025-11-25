@@ -37,7 +37,7 @@ class Client(models.Model):
                                                                                                   self.total_asset_value)
 
 
-@register_tool('get_target_email')
+@register_tool('get_target_message')
 class GetTargetEmail(BaseTool):
     description = ('Get the target email by message_id. Returns the sender, subject, body of the email '
                    'and where to find the attachments.')
@@ -57,7 +57,7 @@ class GetTargetEmail(BaseTool):
             return "Failed to get the target email. Please verify the message_id."
 
 
-@register_tool('register_an_email')
+@register_tool('register_a_message')
 class RegisterAnEmail(BaseTool):
     description = 'Register an email by inserting entry_id, subject, sender, body to DB with a status.'
     parameters = [
