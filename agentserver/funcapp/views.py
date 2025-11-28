@@ -82,9 +82,14 @@ def acquire_target_email(request, message_id):
             # merge the 2 dicts.
             email_dict.update(client_dict)
 
+            email_dict['created_at'] = email.created_at
+            email_dict['updated_at'] = email.updated_at
+
             response = GeneralResponseBody(message="Email found.", status=0, data=email_dict)
         except Email.DoesNotExist:
             response = GeneralResponseBody(message="Target email not found.", status=1, data=None)
+        except Client.DoesNotExist:
+            response = GeneralResponseBody(message="Client not found.", status=1, data=None)
 
         return JsonResponse(response.get_response_body())
     else:

@@ -107,7 +107,9 @@ response body example:
         "client_name": "SuperDealer",
         "email_address": "amonra@126.com",
         "profile": "This client should never trade a stock of NASDAQ marker or have a transaction valuing more than 10% of his total asset value.",
-        "total_asset_value": 30000.0
+        "total_asset_value": 30000.0,
+        "created_at": "2025-11-25T12:55:28.816Z",
+        "updated_at": "2025-11-25T13:19:02.961Z"
     }
 }
 ```
