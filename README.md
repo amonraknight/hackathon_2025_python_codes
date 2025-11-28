@@ -503,3 +503,17 @@ response body example:
     }
 }
 ```
+
+9. 审核邮件（流式回复）
+
+**Request:**
+url: http://{IP}:{PORT}/funcapp/audit_email_stream/{message_id}
+method: POST
+
+其中message_id可以从acquire_all接口获取。
+
+
+**Response**
+Content-Type: text/plain
+
+输出为非重复纯字串。
