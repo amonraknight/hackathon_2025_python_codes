@@ -84,22 +84,22 @@ def register_all_emails_service():
 
     return GeneralResponseBody(message="Registered %d new emails." % len(emails), status=0, data=None)
 
-def audit_email_service(message_id: int):
+def prepare_email_audit_messages(message_id: int):
     # Get the email from DB.
     email = None
     try:
         email: Email = Email.objects.get(message_id=message_id)
     except Email.DoesNotExist:
-        return GeneralResponseBody(message="Target email not found.", status=1, data=None)
+        return "Target email not found.", 1, None
 
     if email.status == 'IGNORED':
-        return GeneralResponseBody(message="This email has been ignored.", status=1, data=None)
+        return "This email has been ignored.", 1, None
 
     client = None
     try:
         client: Client = Client.objects.get(email_address=email.sender)
     except Client.DoesNotExist:
-        return GeneralResponseBody(message="Corresponding client is not found.", status=1, data=None)
+        return "Corresponding client is not found.", 1, None
 
     # Prepare the attachments.
     attachment_folder = os.path.join(ACCESSIBLE_ROOT, email.entry_id)
@@ -134,9 +134,6 @@ def audit_email_service(message_id: int):
                                     'The transaction should also follow this regulation: "%s"'
                                     % (client.total_asset_value, client.profile)})
 
-    reply = []
-    response_plain_text = ''
-    for reply in agent.run(messages=messages):
-        response_plain_text = typewriter_print(reply, response_plain_text)
 
-    return GeneralResponseBody(message="Registered all emails.", status=1, data=reply)
+    return "Messages prepared.", 0, messages
+

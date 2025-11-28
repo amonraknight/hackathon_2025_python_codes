@@ -9,7 +9,7 @@ from qwen_agent.utils.output_beautify import typewriter_print
 from .models import Email, Client
 from django.forms.models import model_to_dict
 from utils.GeneralFunctions import iterate_generator
-from .services import prepare_messages_for_chat_over_email, register_all_emails_service, audit_email_service
+from .services import prepare_messages_for_chat_over_email, register_all_emails_service, prepare_email_audit_messages
 
 
 # Create your views here.
@@ -37,12 +37,40 @@ def audit_email_by_message_id(request, message_id):
     :return:
     '''
     if request.method == 'POST':
+        sys_msg_text, status, messages = prepare_email_audit_messages(message_id)
+        if status== 1:
+            response = GeneralResponseBody(message=sys_msg_text, status=1, data=None)
+        else:
+            agent: Assistant = auditor_agent
+            reply = []
+            response_plain_text = ''
+            for reply in agent.run(messages=messages):
+                response_plain_text = typewriter_print(reply, response_plain_text)
 
-        response = audit_email_service(message_id)
+            response = GeneralResponseBody(message="Registered all emails.", status=1, data=reply)
         return JsonResponse(response.get_response_body())
     else:
         Http404("Request method should be POST.")
         return None
+
+@csrf_exempt
+def audit_email_by_message_id_stream(request, message_id):
+    '''
+    Audit a given email. Respond in stream.
+    :param request:
+    :param message_id:
+    :return:
+    '''
+    sys_msg_text, status, messages = prepare_email_audit_messages(message_id)
+    if status == 1:
+        response = GeneralResponseBody(message=sys_msg_text, status=1, data=None)
+        return JsonResponse(response.get_response_body())
+    else:
+        agent: Assistant = auditor_agent
+
+        return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
+                                     content_type='text/plain')
+
 
 
 @csrf_exempt

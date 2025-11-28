@@ -13,4 +13,6 @@ urlpatterns = [
     path("chat_stream/<int:message_id>", views.chat_over_a_given_email_stream, name="chat_over_a_given_email_stream"),
     path("test_streaming", views.test_streaming_response, name="test_streaming_response"),
     path("statistics", views.get_statistics, name="get_statistics"),
+    path("audit_email_stream/<int:message_id>", views.audit_email_by_message_id_stream,
+         name="audit_email_by_message_id_stream"),
 ]
