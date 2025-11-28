@@ -1,8 +1,9 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, Http404, JsonResponse, StreamingHttpResponse
 from utils.GeneralReponseBody import GeneralResponseBody
+from utils.QueueDict import QueueDict
 from utils.outlook_functions import send_an_email
-from .apps import auditor_agent
+from .apps import auditor_agent, chat_history
 from qwen_agent.agents import Assistant
 import json5
 from qwen_agent.utils.output_beautify import typewriter_print
@@ -38,7 +39,7 @@ def audit_email_by_message_id(request, message_id):
     '''
     if request.method == 'POST':
         sys_msg_text, status, messages = prepare_email_audit_messages(message_id)
-        if status== 1:
+        if status == 1:
             response = GeneralResponseBody(message=sys_msg_text, status=1, data=None)
         else:
             agent: Assistant = auditor_agent
@@ -52,6 +53,7 @@ def audit_email_by_message_id(request, message_id):
     else:
         Http404("Request method should be POST.")
         return None
+
 
 @csrf_exempt
 def audit_email_by_message_id_stream(request, message_id):
@@ -70,7 +72,6 @@ def audit_email_by_message_id_stream(request, message_id):
 
         return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
                                      content_type='text/plain')
-
 
 
 @csrf_exempt
@@ -170,7 +171,14 @@ def chat_over_a_given_email(request, message_id):
     if request.method == 'POST':
 
         messages_from_request = json5.loads(request.body.decode('utf-8'))
-        error_message, status, messages = prepare_messages_for_chat_over_email(message_id, messages_from_request)
+
+        email: Email = Email.objects.get(message_id=message_id)
+        last_message = messages_from_request[-1]
+        history: QueueDict = chat_history
+        history.enqueue(email.sender, last_message)
+        messages_from_hist = history.get_queue(email.sender)
+
+        error_message, status, messages = prepare_messages_for_chat_over_email(message_id, messages_from_hist)
         if status == 1:
             response = GeneralResponseBody(message=error_message, status=1, data=None)
             return JsonResponse(response.get_response_body())
@@ -182,6 +190,7 @@ def chat_over_a_given_email(request, message_id):
                 response_plain_text = typewriter_print(reply, response_plain_text)
 
             response = GeneralResponseBody(message="Chat got replied.", status=0, data=reply)
+            history.enqueue(email.sender, reply[-1])
 
             return JsonResponse(response.get_response_body())
     else:
@@ -223,15 +232,23 @@ def chat_over_a_given_email_stream(request, message_id):
     '''
     if request.method == 'POST':
         messages_from_request = json5.loads(request.body.decode('utf-8'))
-        error_message, status, messages = prepare_messages_for_chat_over_email(message_id, messages_from_request)
+
+        email: Email = Email.objects.get(message_id=message_id)
+        last_message = messages_from_request[-1]
+        history: QueueDict = chat_history
+        history.enqueue(email.sender, last_message)
+        messages_from_his = history.get_queue(email.sender)
+
+        error_message, status, messages = prepare_messages_for_chat_over_email(message_id, messages_from_his)
         if status == 1:
             response = GeneralResponseBody(message=error_message, status=1, data=None)
             return JsonResponse(response.get_response_body())
         else:
             agent: Assistant = auditor_agent
 
-            return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
-                                         content_type='text/plain')
+            return StreamingHttpResponse(
+                streaming_content=iterate_generator(agent.run(messages=messages), history, email.sender),
+                content_type='text/plain')
 
     else:
         Http404("Request method should be POST.")
@@ -249,6 +266,7 @@ def test_streaming_response(request):
 
     return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
                                  content_type='text/plain')
+
 
 @csrf_exempt
 def get_statistics(request):

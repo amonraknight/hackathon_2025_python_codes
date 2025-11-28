@@ -2,6 +2,8 @@ import asyncio
 import time
 from typing import List
 
+from utils.QueueDict import QueueDict
+
 
 async def async_generator(stream_content: list):
     for each_content in stream_content:
@@ -24,7 +26,7 @@ ASSISTANT = 'assistant'
 FUNCTION = 'function'
 
 
-def iterate_generator(stream_content):
+def iterate_generator(stream_content, history: QueueDict=None, hist_key: str=None):
     reply = []
     response_plain_text = ''
     for reply in stream_content:
@@ -50,4 +52,7 @@ def iterate_generator(stream_content):
             yield full_text[len(response_plain_text):]
 
         response_plain_text = full_text
+
+    if history and hist_key:
+        history.enqueue(hist_key, reply[-1])
 
