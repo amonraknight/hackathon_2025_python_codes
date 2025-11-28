@@ -95,14 +95,19 @@ response body example:
     "status": 0,
     "message": "Email found.",
     "data": {
-        "message_id": 4,
+        "message_id": 1,
         "entry_id": "0000000005FFFB29341DD444B26E15764D43B1490700599967CA67E6CD4489419592D3AE272400000000010C0000599967CA67E6CD4489419592D3AE272400000160CC5A0000",
         "subject": "the stock transaction for audit",
         "sender": "amonra@126.com",
         "body": "Hi team,\r\n\r\nThe pdf attached if for the audit of my transaction.\r\n\r\nThanks!",
-        "status": "NEW",
+        "status": "AUDITED",
         "audit_pass": false,
-        "audit_judgement": ""
+        "audit_judgement": "The transaction violates two regulations: 1) Client is prohibited from trading NASDAQ market stocks (AAPL is a NASDAQ-listed stock). 2) Transaction value ($5,000) exceeds 10% of client's total asset value ($3,000).",
+        "client_id": 1,
+        "client_name": "SuperDealer",
+        "email_address": "amonra@126.com",
+        "profile": "This client should never trade a stock of NASDAQ marker or have a transaction valuing more than 10% of his total asset value.",
+        "total_asset_value": 30000.0
     }
 }
 ```
@@ -463,4 +468,36 @@ The total value of the transaction is calculated as follows:
 This exceeds the client's profile limit of $1,000 per transaction. 
 
 Would you like me to proceed with the audit judgment?
+```
+
+8. 获得数量统计
+
+取得处于不同状态的email的数量。
+
+**Request:**
+
+url: http://{IP}:{PORT}/funcapp/statistics
+method: POST
+
+**Response**
+
+Content-Type: application/json
+response body example: 
+
+```json
+{
+    "status": 1,
+    "message": "Statistics acquired.",
+    "data": {
+        "new_count": 0,
+        "audited_count": 1,
+        "replied_count": 0,
+        "ignored_count": 0,
+        "total_count": 1,
+        "new_percentage": 0.0,
+        "audited_percentage": 100.0,
+        "replied_percentage": 0.0,
+        "ignored_percentage": 0.0
+    }
+}
 ```

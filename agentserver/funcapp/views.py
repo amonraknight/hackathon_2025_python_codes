@@ -6,7 +6,7 @@ from .apps import auditor_agent
 from qwen_agent.agents import Assistant
 import json5
 from qwen_agent.utils.output_beautify import typewriter_print
-from .models import Email
+from .models import Email, Client
 from django.forms.models import model_to_dict
 from utils.GeneralFunctions import iterate_generator
 from .services import prepare_messages_for_chat_over_email, register_all_emails_service, audit_email_service
@@ -74,8 +74,15 @@ def acquire_target_email(request, message_id):
     if request.method == 'POST':
         try:
             email: Email = Email.objects.get(message_id=message_id)
+            sender = email.sender
+            client: Client = Client.objects.get(email_address=sender)
 
-            response = GeneralResponseBody(message="Email found.", status=0, data=model_to_dict(email))
+            email_dict = model_to_dict(email)
+            client_dict = model_to_dict(client)
+            # merge the 2 dicts.
+            email_dict.update(client_dict)
+
+            response = GeneralResponseBody(message="Email found.", status=0, data=email_dict)
         except Email.DoesNotExist:
             response = GeneralResponseBody(message="Target email not found.", status=1, data=None)
 
@@ -209,3 +216,37 @@ def test_streaming_response(request):
 
     return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
                                  content_type='text/plain')
+
+@csrf_exempt
+def get_statistics(request):
+    '''
+    Get the statistics of the emails. Count the number of emails having status in "NEW", "AUDITED", "REPLIED", "IGNORED".
+    Also cauculate the percentage of emails in these statuses.
+    :param request:
+    :return: JsonResponse
+    '''
+    if request.method == 'POST':
+        new_count = Email.objects.filter(status='NEW').count()
+        audited_count = Email.objects.filter(status='AUDITED').count()
+        replied_count = Email.objects.filter(status='REPLIED').count()
+        ignored_count = Email.objects.filter(status='IGNORED').count()
+        total_count = new_count + audited_count + replied_count + ignored_count
+
+        statistics = {
+            'new_count': new_count,
+            'audited_count': audited_count,
+            'replied_count': replied_count,
+            'ignored_count': ignored_count,
+            'total_count': total_count,
+            'new_percentage': round(new_count / total_count * 100, 2),
+            'audited_percentage': round(audited_count / total_count * 100, 2),
+            'replied_percentage': round(replied_count / total_count * 100, 2),
+            'ignored_percentage': round(ignored_count / total_count * 100, 2)
+        }
+
+        response = GeneralResponseBody(message='Statistics acquired.', status=1, data=statistics)
+        return JsonResponse(response.get_response_body())
+
+    else:
+        Http404("Request method should be POST.")
+        return None

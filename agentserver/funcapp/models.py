@@ -3,6 +3,7 @@ from utils.constants import *
 import os
 from qwen_agent.tools.base import BaseTool, register_tool
 import json5
+from datetime import datetime
 
 
 # Create your models here.
@@ -54,6 +55,7 @@ class GetTargetEmail(BaseTool):
         message_id = int(json5.loads(params)['message_id'])
         try:
             target_email: Email = Email.objects.get(message_id=message_id)
+
             return str(target_email)
         except Email.DoesNotExist:
             return "Failed to get the target email. Please verify the message_id."
@@ -148,8 +150,9 @@ class AddAuditJudgement(BaseTool):
             target_email.status = 'AUDITED'
             target_email.audit_pass = audit_pass
             target_email.audit_judgement = audit_judgement
+            target_email.update_at = datetime.now()
+
             target_email.save()
             return 'The judgement has been added to the record.'
         except Email.DoesNotExist:
             return 'Message not found. Please verify the message_id.'
-
