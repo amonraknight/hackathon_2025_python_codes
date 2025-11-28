@@ -26,7 +26,7 @@ ASSISTANT = 'assistant'
 FUNCTION = 'function'
 
 
-def iterate_generator(stream_content, history: QueueDict=None, hist_key: str=None):
+def iterate_generator(stream_content, history: QueueDict=None, hist_key=None):
     reply = []
     response_plain_text = ''
     for reply in stream_content:

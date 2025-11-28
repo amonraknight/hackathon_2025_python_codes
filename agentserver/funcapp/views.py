@@ -172,11 +172,10 @@ def chat_over_a_given_email(request, message_id):
 
         messages_from_request = json5.loads(request.body.decode('utf-8'))
 
-        email: Email = Email.objects.get(message_id=message_id)
         last_message = messages_from_request[-1]
         history: QueueDict = chat_history
-        history.enqueue(email.sender, last_message)
-        messages_from_hist = history.get_queue(email.sender)
+        history.enqueue(message_id, last_message)
+        messages_from_hist = history.get_queue(message_id)
 
         error_message, status, messages = prepare_messages_for_chat_over_email(message_id, messages_from_hist)
         if status == 1:
@@ -190,7 +189,7 @@ def chat_over_a_given_email(request, message_id):
                 response_plain_text = typewriter_print(reply, response_plain_text)
 
             response = GeneralResponseBody(message="Chat got replied.", status=0, data=reply)
-            history.enqueue(email.sender, reply[-1])
+            history.enqueue(message_id, reply[-1])
 
             return JsonResponse(response.get_response_body())
     else:
@@ -233,11 +232,10 @@ def chat_over_a_given_email_stream(request, message_id):
     if request.method == 'POST':
         messages_from_request = json5.loads(request.body.decode('utf-8'))
 
-        email: Email = Email.objects.get(message_id=message_id)
         last_message = messages_from_request[-1]
         history: QueueDict = chat_history
-        history.enqueue(email.sender, last_message)
-        messages_from_his = history.get_queue(email.sender)
+        history.enqueue(message_id, last_message)
+        messages_from_his = history.get_queue(message_id)
 
         error_message, status, messages = prepare_messages_for_chat_over_email(message_id, messages_from_his)
         if status == 1:
@@ -247,7 +245,7 @@ def chat_over_a_given_email_stream(request, message_id):
             agent: Assistant = auditor_agent
 
             return StreamingHttpResponse(
-                streaming_content=iterate_generator(agent.run(messages=messages), history, email.sender),
+                streaming_content=iterate_generator(agent.run(messages=messages), history, message_id),
                 content_type='text/plain')
 
     else:
