@@ -266,7 +266,8 @@ def get_statistics(request):
         audited_count = Email.objects.filter(status='AUDITED').count()
         replied_count = Email.objects.filter(status='REPLIED').count()
         ignored_count = Email.objects.filter(status='IGNORED').count()
-        total_count = new_count + audited_count + replied_count + ignored_count
+        human_count = Email.objects.filter(status='HUMAN').count()
+        total_count = new_count + audited_count + replied_count + ignored_count + human_count
 
         statistics = {
             'new_count': new_count,
@@ -274,10 +275,12 @@ def get_statistics(request):
             'replied_count': replied_count,
             'ignored_count': ignored_count,
             'total_count': total_count,
+            'human_count': human_count,
             'new_percentage': round(new_count / total_count * 100, 2),
             'audited_percentage': round(audited_count / total_count * 100, 2),
             'replied_percentage': round(replied_count / total_count * 100, 2),
-            'ignored_percentage': round(ignored_count / total_count * 100, 2)
+            'ignored_percentage': round(ignored_count / total_count * 100, 2),
+            'human_percentage': round(human_count / total_count * 100, 2)
         }
 
         response = GeneralResponseBody(message='Statistics acquired.', status=1, data=statistics)
