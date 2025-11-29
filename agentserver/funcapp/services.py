@@ -117,7 +117,7 @@ def prepare_email_audit_messages(message_id: int):
         return "Corresponding client is not found.", 1, None
 
     # Prepare the attachments.
-    attachment_folder = os.path.join(ACCESSIBLE_ROOT, email.entry_id)
+    attachment_folder = os.path.join(settings.ACCESSIBLE_ROOT, email.entry_id)
     attachment_paths = get_all_files_under_path(attachment_folder)
 
     # Prepare the messages.
