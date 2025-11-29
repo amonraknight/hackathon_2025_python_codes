@@ -91,7 +91,7 @@ class RegisterAnEmail(BaseTool):
         },
         {
             'name': 'status',
-            'description': 'If the email is about financial transaction, write "NEW". Otherwise write "IGNORED".',
+            'description': 'If the email is about financial transaction, write "NEW". Otherwise write "HUMAN".',
             'type': 'string',
             'required': True
         }

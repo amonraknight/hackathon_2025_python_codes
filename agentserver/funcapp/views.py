@@ -3,7 +3,7 @@ from django.http import HttpResponse, Http404, JsonResponse, StreamingHttpRespon
 from utils.GeneralReponseBody import GeneralResponseBody
 from utils.QueueDict import QueueDict
 from utils.outlook_functions import send_an_email
-from .apps import auditor_agent, chat_history
+from .apps import agent_orchestra, chat_history
 from qwen_agent.agents import Assistant
 import json5
 from qwen_agent.utils.output_beautify import typewriter_print
@@ -42,7 +42,7 @@ def audit_email_by_message_id(request, message_id):
         if status == 1:
             response = GeneralResponseBody(message=sys_msg_text, status=1, data=None)
         else:
-            agent: Assistant = auditor_agent
+            agent: Assistant = agent_orchestra['auditor']
             reply = []
             response_plain_text = ''
             for reply in agent.run(messages=messages):
@@ -68,7 +68,7 @@ def audit_email_by_message_id_stream(request, message_id):
         response = GeneralResponseBody(message=sys_msg_text, status=1, data=None)
         return JsonResponse(response.get_response_body())
     else:
-        agent: Assistant = auditor_agent
+        agent: Assistant = agent_orchestra['auditor']
 
         return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
                                      content_type='text/plain')
@@ -182,7 +182,7 @@ def chat_over_a_given_email(request, message_id):
             response = GeneralResponseBody(message=error_message, status=1, data=None)
             return JsonResponse(response.get_response_body())
         else:
-            agent: Assistant = auditor_agent
+            agent: Assistant = agent_orchestra['assistant_chat']
             reply = []
             response_plain_text = ''
             for reply in agent.run(messages=messages):
@@ -242,7 +242,7 @@ def chat_over_a_given_email_stream(request, message_id):
             response = GeneralResponseBody(message=error_message, status=1, data=None)
             return JsonResponse(response.get_response_body())
         else:
-            agent: Assistant = auditor_agent
+            agent: Assistant = agent_orchestra['assistant_chat']
 
             return StreamingHttpResponse(
                 streaming_content=iterate_generator(agent.run(messages=messages), history, message_id),
@@ -251,19 +251,6 @@ def chat_over_a_given_email_stream(request, message_id):
     else:
         Http404("Request method should be POST.")
         return None
-
-
-@csrf_exempt
-def test_streaming_response(request):
-    """
-    test_list = [i for i in range(100)]
-    return StreamingHttpResponse(test_generator(test_list), content_type='text/plain')
-    """
-    messages = [{'role': 'user', 'content': 'Hello! Could you introduce yourself?'}]
-    agent: Assistant = auditor_agent
-
-    return StreamingHttpResponse(streaming_content=iterate_generator(agent.run(messages=messages)),
-                                 content_type='text/plain')
 
 
 @csrf_exempt

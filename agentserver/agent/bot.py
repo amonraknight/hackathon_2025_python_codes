@@ -22,10 +22,11 @@ def get_basic_bot():
 
 
 
-def get_a_customized_agent(tools: list = [], system_message: str = None):
+def get_a_customized_agent(tools: list = [], system_message: str = None, model: str=None):
     llm_cfg = {
         # 使用 DashScope 提供的模型服务：
-        'model': 'qwen3-235b-a22b',
+        # If model is not given, use qwen-max-latest.
+        'model': model if model is not None else 'qwen-max-latest',
         'model_type': 'qwen_dashscope'
     }
 
