@@ -1,5 +1,4 @@
 from django.db import models
-from utils.constants import *
 import os
 from qwen_agent.tools.base import BaseTool, register_tool
 import json5

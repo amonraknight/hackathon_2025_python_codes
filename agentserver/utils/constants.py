@@ -1,1 +1,0 @@
-ACCESSIBLE_ROOT = "D:\\hackathon_io\\outputs"

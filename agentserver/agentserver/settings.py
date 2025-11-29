@@ -129,3 +129,88 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Agent properties.
+
+PROMPT_TEMPLATE_SYSTEM_CHAT = 'You are going to assist the user to audit a transaction by client %s through email (message_id="%d"). Answer the user\'s question or follow the users instruction. The user is going to provide the details of the email, the attachment, the client.'
+
+PROMPT_TEMPLATE_SYSTEM_AUDIT = 'Please audit a transaction from client %s through email (message_id="%d"). The user will provide the email content, attached transaction detail files and the client\'s profile as reference. If you consider the transaction valid, please set audit_pass as true and congratulate the client. Otherwise, please set audit_pass as false and tell the client the reason.Use tool "add_audit_judgement" to add your judgement to DB.'
+
+ACCESSIBLE_ROOT = "D:\\hackathon_io\\outputs"
+
+AGENT_SYSTEM_MESSAGE_MESSANGER = 'You are a messanger agent who reads emails and register them to DB.'
+AGENT_TOOLS_MESSANGER = ['register_a_message']
+AGENT_MODEL_MESSANGER = 'qwen-max'
+
+AGENT_TOOLS_AUDITOR = [
+            {'mcpServers': {  # You can specify the MCP configuration file
+                "filesystem": {
+                    "command": "npx",
+                    "args": [
+                        "-y",
+                        "@modelcontextprotocol/server-filesystem",
+                        ACCESSIBLE_ROOT
+                    ]
+                },
+                "playwright": {
+                    "command": "npx",
+                    "args": [
+                        "@playwright/mcp@latest"
+                    ]
+                }
+            }
+            },
+            'add_audit_judgement'
+        ]
+
+AGENT_SYSTEM_MESSAGE_AUDITOR = '''
+                    You are an AI auditor of stock transactions. 
+                    Make judgements according to clients' documents, market rules and client profile.
+                    1. Use Playwright to search for stock information from Google finance(https://www.google.com/finance/).
+                    2. Use Filesystem to read the clients' documents.
+                    3. Regulations will be provided as a context.
+                    4. Make your decisions and write your judgement.
+                    '''
+
+AGENT_MODEL_AUDITOR = 'qwen3-next-80b-a3b-instruct'
+
+AGENT_TOOLS_REVIEWER = ['add_audit_judgement']
+
+AGENT_SYSTEM_MESSAGE_REVIEWER = 'You are a reviewer agent who reviews the judgement of the auditor. Check whether there are conflict across the judgement of different transaction emails.'
+
+AGENT_MODEL_REVIEWER = 'qwen-max-latest'
+
+AGENT_TOOLS_ASSISTANT_CHAT = [
+            {'mcpServers': {  # You can specify the MCP configuration file
+                "filesystem": {
+                    "command": "npx",
+                    "args": [
+                        "-y",
+                        "@modelcontextprotocol/server-filesystem",
+                        ACCESSIBLE_ROOT
+                    ]
+                },
+                "playwright": {
+                    "command": "npx",
+                    "args": [
+                        "@playwright/mcp@latest"
+                    ]
+                }
+            }
+            },
+            'get_target_message',
+            'register_a_message',
+            'add_audit_judgement'
+        ]
+
+AGENT_SYSTEM_MESSAGE_ASSISTANT_CHAT = '''
+                    You are an AI auditor of stock transactions. 
+                    Make judgements according to clients' documents, market rules and client profile.
+                    1. Use Playwright to search for stock information from Google finance(https://www.google.com/finance/).
+                    2. Use Filesystem to read the clients' documents.
+                    3. Regulations will be provided as a context.
+                    4. Make your decisions and write your judgement.
+                    5. Reply the human auditor's doubts in chat.
+                    '''
+
+AGENT_MODEL_ASSISTANT_CHAT = 'qwen3-next-80b-a3b-instruct'

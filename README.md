@@ -517,3 +517,32 @@ method: POST
 Content-Type: text/plain
 
 输出为非重复纯字串。
+
+
+10. 获得所有客户
+
+**Request:**
+
+url: http://{IP}:{PORT}/funcapp/get_all_clients
+method: POST
+
+**Response**
+
+Content-Type: application/json
+response body example: 
+
+```json
+{
+    "status": 0,
+    "message": "Clients acquired.",
+    "data": [
+        {
+            "client_id": 1,
+            "client_name": "SuperDealer",
+            "email_address": "amonra@126.com",
+            "profile": "This client should never trade a stock of NASDAQ marker or have a transaction valuing more than 10% of his total asset value.",
+            "total_asset_value": 30000.0
+        }
+    ]
+}
+```

@@ -1,5 +1,4 @@
 from .models import Email, Client
-from utils.constants import ACCESSIBLE_ROOT
 import os
 from utils.FileUtil import get_all_files_under_path
 from utils.outlook_functions import read_outlook_mail
@@ -8,6 +7,8 @@ from .apps import agent_orchestra
 from qwen_agent.utils.output_beautify import typewriter_print
 import json5
 from utils.GeneralReponseBody import GeneralResponseBody
+from django.conf import settings
+
 
 
 def prepare_messages_for_chat_over_email(message_id: int, messages_from_request: list):
@@ -37,17 +38,13 @@ def prepare_messages_for_chat_over_email(message_id: int, messages_from_request:
         return "Corresponding client is not found.", 1, []
 
     # Prepare the attachments.
-    attachment_folder = os.path.join(ACCESSIBLE_ROOT, email.entry_id)
+    attachment_folder = os.path.join(settings.ACCESSIBLE_ROOT, email.entry_id)
     attachment_paths = get_all_files_under_path(attachment_folder)
 
     # Prepare the messages.
     messages = []
     messages.append({'role': 'system',
-                     'content': 'You are going to assist the user to audit a transaction '
-                                'by client %s through email (message_id="%d"). '
-                                'Answer the user\'s question or follow the users instruction. '
-                                'The user is going to provide the details of the email, the attachment, the client.'
-                                % (client.client_name, message_id)})
+                     'content': settings.PROMPT_TEMPLATE_SYSTEM_CHAT % (client.client_name, message_id)})
 
     messages.append(
         {'role': 'user', 'content': 'The email subject is "%s", the body is "%s".' % (email.subject, email.body)})
@@ -64,7 +61,7 @@ def prepare_messages_for_chat_over_email(message_id: int, messages_from_request:
 
 
 def register_all_emails_service():
-    emails = read_outlook_mail(ACCESSIBLE_ROOT)
+    emails = read_outlook_mail(settings.ACCESSIBLE_ROOT)
     all_clients = Client.objects.all()
     existing_emails = Email.objects.all()
 
@@ -126,13 +123,7 @@ def prepare_email_audit_messages(message_id: int):
     # Prepare the messages.
     messages = []
     messages.append({'role': 'system',
-                     'content': 'Please audit a transaction from client %s through email (message_id="%d"). '
-                                'The user will provide the email content, attached transaction detail files'
-                                ' and the client\'s profile as reference. '
-                                'If you consider the transaction valid, please set audit_pass as true and congratulate the client. '
-                                'Otherwise, please set audit_pass as false and tell the client the reason.'
-                                'Use tool "add_audit_judgement" to add your judgement to DB.'
-                                % (client.client_name, message_id)})
+                     'content': settings.PROMPT_TEMPLATE_SYSTEM_AUDIT % (client.client_name, message_id)})
 
     messages.append(
         {'role': 'user', 'content': 'The email subject is "%s", the body is "%s".' % (email.subject, email.body)})
