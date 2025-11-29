@@ -14,4 +14,5 @@ urlpatterns = [
     path("statistics", views.get_statistics, name="get_statistics"),
     path("audit_email_stream/<int:message_id>", views.audit_email_by_message_id_stream,
          name="audit_email_by_message_id_stream"),
+    path("get_all_clients", views.get_all_clients, name="get_all_clients"),
 ]

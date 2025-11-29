@@ -10,44 +10,6 @@ agent_orchestra = {}
 chat_history = None
 
 
-# Write all the functions here so they will be loaded to .
-@register_tool('send_email')
-class SendEmail(BaseTool):
-    description = 'Send out an email to given recipients.'
-    parameters = [
-        {
-            'name': 'recipients',
-            'description': 'A list of email addresses as the recipients of the email, separated by ";".',
-            'type': 'string',
-            'required': True
-        },
-        {
-            'name': 'subject',
-            'description': 'The subject of the email.',
-            'type': 'string',
-            'required': True
-        },
-        {
-            'name': 'body',
-            'description': 'The email body.',
-            'type': 'string',
-            'required': True
-        }
-    ]
-
-    def call(self, params: str, **kwargs) -> str:
-        recipients = json5.loads(params)['recipients']
-        subject = json5.loads(params)['subject']
-        body = json5.loads(params)['body']
-
-        # Split recipients by ";".
-        recipients_list = recipients.split(';')
-
-        send_an_email(recipients_list, subject, body)
-
-        return 'Email sent.'
-
-
 def _initiate_agent_orchestra():
     global agent_orchestra
     # If agent_orchestra is empty, start to create agents.
@@ -115,8 +77,7 @@ def _initiate_agent_orchestra():
             },
             'get_target_message',
             'register_a_message',
-            'add_audit_judgement',
-            'send_email'
+            'add_audit_judgement'
         ]
         assistant_chat_system_message = '''
                     You are an AI auditor of stock transactions. 

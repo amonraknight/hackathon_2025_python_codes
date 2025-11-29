@@ -289,3 +289,15 @@ def get_statistics(request):
     else:
         Http404("Request method should be POST.")
         return None
+
+
+@csrf_exempt
+def get_all_clients(request):
+    '''
+    Get all the clients.
+    :return: list
+    '''
+    clients = Client.objects.all().values()
+    clients_list = list(clients)
+    response = GeneralResponseBody(message='Clients acquired.', status=0, data=clients_list)
+    return JsonResponse(response.get_response_body())
